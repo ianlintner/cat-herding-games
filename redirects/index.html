@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="5;url=https://games.cat-herding.net/">
+  <title>Moved — Cat Herding Games</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #151322; color: #f6f0ff; display: grid; place-items: center; min-height: 100vh; margin: 0; text-align: center; padding: 2rem; }
+    a { color: #64e0c8; }
+    .cat { font-size: 4rem; }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="cat" aria-hidden="true">🐈</div>
+    <h1>This game has moved</h1>
+    <p>You're being herded over to <a id="target" href="https://games.cat-herding.net/">games.cat-herding.net</a> in a moment.</p>
+  </div>
+  <script>
+    (function () {
+      var map = {
+        'dinosaur.cat-herding.net': '/primordial-swamp/',
+        'space-tycoon.cat-herding.net': '/space-tycoon/'
+      };
+      var host = location.hostname.toLowerCase();
+      var path = map[host] || '/';
+      // Keep a sensible subpath and the query string where applicable.
+      var rest = location.pathname.replace(/^\/+/, '');
+      if (rest && !/\.(html?|js|css|json|png|jpg|svg|ico)$/i.test(rest)) {
+        path += rest + (rest.endsWith('/') ? '' : '/');
+      }
+      if (location.search) path += location.search;
+      if (location.hash) path += location.hash;
+      var url = 'https://games.cat-herding.net' + path;
+      document.getElementById('target').href = url;
+      document.getElementById('target').textContent = url;
+      location.replace(url);
+    })();
+  </script>
+</body>
+</html>

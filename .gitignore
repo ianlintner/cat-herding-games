@@ -2,3 +2,7 @@ node_modules/
 dist/
 .worktrees/
 .build/
+test-results/
+playwright-report/
+*.log
+.DS_Store
