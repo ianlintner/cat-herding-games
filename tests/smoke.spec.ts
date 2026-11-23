@@ -25,23 +25,36 @@ function track(page: import('@playwright/test').Page) {
   return failures;
 }
 
-/** Failures caused by a documented upstream game-source issue are allowed,
- *  but only the exact asset prefixes named in games.json. Any other 404 or
- *  console error fails the build. */
+/** True when the failure URL is a documented upstream-game asset gap, and
+ *  only that: never tolerate a 404 on the game's own emitted JS/CSS chunks. */
+function isAllowedUpstreamFailure(
+  f: Failure,
+  game: { slug: string; subpathBlocker?: { allowedMissingPrefixes: string[] } },
+): boolean {
+  if (!f.url) return false;
+  let path: string;
+  try {
+    path = new URL(f.url).pathname;
+  } catch {
+    return false;
+  }
+  // Vite writes the game's compiled JS/CSS into <slug>/assets/. A 404 there
+  // is a real build/smoke failure even when the upstream art assets are known
+  // to be missing from the same directory. Other file types (png, ogg, json)
+  // are part of the documented upstream gap and may be tolerated below.
+  if (/\.(js|css|mjs)(\?|$)/i.test(path)) return false;
+  const allowed = game.subpathBlocker?.allowedMissingPrefixes ?? [];
+  return allowed.some((prefix) => path.startsWith(prefix));
+}
+
 function assertNoUnexpectedFailures(
   failures: Failure[],
   game: { slug: string; subpathBlocker?: { allowedMissingPrefixes: string[] } },
 ) {
-  const allowed = game.subpathBlocker?.allowedMissingPrefixes ?? [];
-  const unexpected = failures.filter((f) => {
-    if (!f.url) return true;
-    const path = new URL(f.url).pathname;
-    return !allowed.some((prefix) => path.startsWith(prefix));
-  });
-  if (allowed.length && unexpected.length === 0) {
-    const tolerated = failures.length;
+  const unexpected = failures.filter((f) => !isAllowedUpstreamFailure(f, game));
+  if (unexpected.length === 0 && failures.length) {
     console.log(
-      `ℹ ${game.slug}: ${tolerated} known upstream asset 404(s) tolerated — ` +
+      `ℹ ${game.slug}: ${failures.length} known upstream asset 404(s) tolerated — ` +
         `see games.json subpathBlocker for the required game-repo fix`,
     );
   }

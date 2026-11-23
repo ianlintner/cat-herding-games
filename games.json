@@ -31,7 +31,6 @@
       "blurb": "Retro-modern Halloween sports: football and hockey with a league of lovable monsters. Three games in one cabinet.",
       "status": "playable",
       "tags": ["sports", "arcade", "multi-page"],
-      "spa": true,
       "smokePath": "football/",
       "subpathBlocker": {
         "summary": "Game HTML hardcodes root-absolute /assets/* and /football/ /hockey/ links; Vite --base only rewrites its own emitted assets.",
@@ -56,8 +55,7 @@
       "thumbnail": "/thumbnails/space-tycoon.png",
       "blurb": "Build a freight empire among the stars. Planets, ships, trade routes and an unreasonable amount of paperwork.",
       "status": "playable",
-      "tags": ["strategy", "simulation", "space"],
-      "spa": true
+      "tags": ["strategy", "simulation", "space"]
     },
     {
       "slug": "primordial-swamp",

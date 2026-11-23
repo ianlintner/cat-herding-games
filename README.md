@@ -37,10 +37,12 @@ games.json  ──▶ scripts/build-all.ts ──▶ dist/<slug>/   (one bundle)
 `.github/workflows/deploy.yml`:
 
 - **Pull requests**: build all games, serve `dist/` locally, run the Playwright smoke test (index, every card link, every game's canvas, asset requests and console errors). No deploy.
-- **Push to `main`** / **workflow_dispatch**: build, smoke-test, upload the tested `dist/` as an artifact, deploy that exact artifact with `Azure/static-web-apps-deploy@v1` (`app_location: dist`, `skip_app_build: true`), then smoke-test the live URL.
-- **Every 30 minutes**: compare each game's current `main` SHA against the live `versions.json`; exit early when nothing changed, otherwise build/deploy/smoke as above.
+- **Push to `main`** / **workflow_dispatch**: build, smoke-test, upload the tested `dist/` as an artifact, deploy that exact artifact with the SHA-pinned `Azure/static-web-apps-deploy@v1` (`app_location: dist`, `skip_app_build: true`), then smoke-test the live URL.
+- **Every 30 minutes**: compare each game's SHA at its manifest `ref` against the live `versions.json`; exit early when nothing changed, otherwise build/deploy/smoke as above.
 
-The legacy hosts are served by a second tiny SWA deployed from `redirects/` (`dinosaur.cat-herding.net` → `/primordial-swamp/`, `space-tycoon.cat-herding.net` → `/space-tycoon/`). It needs a `AZURE_SWA_REDIRECTS_TOKEN` repository secret; the job warns and skips when absent.
+Unit tests (`npm test`) and typecheck run on every workflow trigger before the build. Deploy runs share a non-cancelling concurrency group so a scheduled tick or PR push can never kill an in-flight SWA upload or live smoke test; PR runs may cancel superseded PR pushes. Third-party actions are pinned to commit SHAs.
+
+The legacy hosts are served by a second tiny SWA deployed from `redirects/` (`dinosaur.cat-herding.net` → `/primordial-swamp/`, `space-tycoon.cat-herding.net` → `/space-tycoon/`). Its `staticwebapp.config.json` falls back all deep paths to `/index.html` so path-preserving JS runs on any legacy URL. It needs a `AZURE_SWA_REDIRECTS_TOKEN` repository secret; the job warns and skips when absent.
 
 > **Scheduled-workflow risk:** GitHub disables scheduled workflows after 60 days of repository inactivity. Pushes (including game-version rebuilds) and manual dispatches reset that clock. If the repo goes quiet for two months, re-enable the schedule in Actions settings or run a manual dispatch.
 

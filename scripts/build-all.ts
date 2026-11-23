@@ -6,7 +6,8 @@
  * install deps, then run Vite with an explicit --base=/<slug>/ so no source
  * change is needed in the game repo. Output is copied to dist/<slug>/.
  *
- * A failing game aborts the whole build; no partial bundle is left behind.
+ * A failing game aborts the whole build. dist/ is recreated from scratch for
+ * each run, but CI must still abort on failure so no partial bundle is deployed.
  */
 import {
   cpSync,
@@ -86,6 +87,11 @@ function prepareSource(game: Game): string {
     console.log(`↻ Reusing .build/${game.slug}; fetching ${game.ref}`);
     run('git', ['fetch', '--depth', '1', 'origin', game.ref], target);
     run('git', ['checkout', '--force', 'FETCH_HEAD'], target);
+    if (game.submodules) {
+      // A reused checkout may have stale (or absent) submodule contents.
+      run('git', ['submodule', 'sync', '--recursive'], target);
+      run('git', ['submodule', 'update', '--init', '--recursive', '--depth', '1', '--force'], target);
+    }
   } else {
     rmSync(target, { recursive: true, force: true });
     console.log(`↓ Shallow-cloning ${game.repo}@${game.ref}`);

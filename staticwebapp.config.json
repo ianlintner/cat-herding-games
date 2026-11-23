@@ -10,14 +10,38 @@
     },
     {
       "route": "/assets/*",
+      "headers": { "cache-control": "public, max-age=86400" }
+    },
+    {
+      "route": "/nyan-noodle/assets/*.js",
       "headers": { "cache-control": "public, max-age=31536000, immutable" }
     },
     {
-      "route": "/*/assets/*-*.js",
+      "route": "/nyan-noodle/assets/*.css",
       "headers": { "cache-control": "public, max-age=31536000, immutable" }
     },
     {
-      "route": "/*/assets/*-*.css",
+      "route": "/monster-league-arcade/assets/*.js",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
+      "route": "/monster-league-arcade/assets/*.css",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
+      "route": "/space-tycoon/assets/*.js",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
+      "route": "/space-tycoon/assets/*.css",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
+      "route": "/primordial-swamp/assets/*.js",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
+      "route": "/primordial-swamp/assets/*.css",
       "headers": { "cache-control": "public, max-age=31536000, immutable" }
     },
     {
@@ -38,6 +62,12 @@
       "/staticwebapp.config.json",
       "/*.{png,jpg,jpeg,gif,webp,avif,svg,ico,woff,woff2,mp3,ogg,wav,mp4,webm,js,css,json}"
     ]
+  },
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/404.html",
+      "statusCode": 404
+    }
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",

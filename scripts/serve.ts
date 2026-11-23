@@ -26,7 +26,14 @@ const MIME: Record<string, string> = {
 
 createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
-  let path = normalize(decodeURIComponent(url.pathname)).replace(/^(\.\.[/\\])+/, '').replace(/^[/\\]+/, '');
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(url.pathname);
+  } catch {
+    res.writeHead(400).end('bad request');
+    return;
+  }
+  let path = normalize(decoded).replace(/^(\.\.[/\\])+/, '').replace(/^[/\\]+/, '');
   if (path === '' || path.endsWith('/')) path += 'index.html';
   let file = join(ROOT, path);
   if (!file.startsWith(ROOT)) {
