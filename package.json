@@ -1,0 +1,26 @@
+{
+  "name": "cat-herding-games-hub",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "One Azure Static Web App hub for the Cat Herding Games collection.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "bash scripts/build-all",
+    "test": "node --test tests/*.test.mjs",
+    "smoke": "playwright test",
+    "serve": "npx tsx scripts/serve.ts",
+    "generate:site": "node scripts/generate-site.mjs",
+    "capture:thumbs": "npx tsx scripts/capture-thumbs.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

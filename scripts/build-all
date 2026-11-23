@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Build all games into one deployable dist/ bundle.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec npx tsx "$ROOT/scripts/build-all.ts" "$@"

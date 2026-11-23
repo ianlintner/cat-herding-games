@@ -1,0 +1,81 @@
+{
+  "featured": "nyan-noodle",
+  "games": [
+    {
+      "slug": "nyan-noodle",
+      "title": "Nyan Noodle",
+      "repo": "ianlintner/nyan-noodle",
+      "ref": "main",
+      "workdir": "apps/game",
+      "install": "npm ci",
+      "build": "npm run build",
+      "baseEnv": "VITE_BASE",
+      "output": "apps/game/dist",
+      "thumbnail": "/thumbnails/nyan-noodle.png",
+      "blurb": "Run a cozy ramen shop for a crew of very particular cats. Prep bowls, serve tickets, and keep the broth flowing.",
+      "status": "playable",
+      "tags": ["cozy", "management", "phaser"],
+      "featured": true
+    },
+    {
+      "slug": "monster-league-arcade",
+      "title": "Monster League Arcade",
+      "repo": "ianlintner/monster-league-arcade",
+      "ref": "main",
+      "workdir": ".",
+      "install": "npm ci",
+      "build": "npm run build -w @monster-league/arcade-hub",
+      "baseEnv": null,
+      "output": "dist",
+      "thumbnail": "/thumbnails/monster-league-arcade.png",
+      "blurb": "Retro-modern Halloween sports: football and hockey with a league of lovable monsters. Three games in one cabinet.",
+      "status": "playable",
+      "tags": ["sports", "arcade", "multi-page"],
+      "smokePath": "football/",
+      "subpathBlocker": {
+        "summary": "Game HTML hardcodes root-absolute /assets/* and /football/ /hockey/ links; Vite --base only rewrites its own emitted assets.",
+        "requiredChange": "Use base-relative asset URLs in the game source (import.meta.env.BASE_URL or VITE_BASE) and prefix internal links with the base path.",
+        "allowedMissingPrefixes": ["/assets/atlas.json", "/assets/sprites/", "/assets/arenas/"]
+      }
+    },
+    {
+      "slug": "space-tycoon",
+      "title": "Space Tycoon",
+      "repo": "ianlintner/space-tycoon",
+      "ref": "main",
+      "workdir": ".",
+      "install": "npm ci",
+      "build": "npm run build",
+      "baseEnv": null,
+      "output": "dist",
+      "submodules": true,
+      "env": {
+        "VITE_AUDIO_BASE_URL": "https://cdn.cat-herding.net/audio"
+      },
+      "thumbnail": "/thumbnails/space-tycoon.png",
+      "blurb": "Build a freight empire among the stars. Planets, ships, trade routes and an unreasonable amount of paperwork.",
+      "status": "playable",
+      "tags": ["strategy", "simulation", "space"]
+    },
+    {
+      "slug": "primordial-swamp",
+      "title": "Primordial Swamp",
+      "repo": "ianlintner/PrimordialSwamp",
+      "ref": "main",
+      "workdir": ".",
+      "install": "npm ci",
+      "build": "npm run build",
+      "baseEnv": null,
+      "output": "dist",
+      "thumbnail": "/thumbnails/primordial-swamp.png",
+      "blurb": "A scientifically accurate dinosaur roguelite inspired by Odell Lake. Survive the swamp, one prehistoric meal at a time.",
+      "status": "playable",
+      "tags": ["roguelite", "dinosaurs", "retro"],
+      "subpathBlocker": {
+        "summary": "Vite copies only public/, but this repo keeps 42 game assets in repo-root assets/; runtime requests /assets/* which do not exist in dist/.",
+        "requiredChange": "Move assets/ into public/assets/ (or set publicDir: 'assets' in vite.config.ts) and load them via import.meta.env.BASE_URL so they resolve under /primordial-swamp/.",
+        "allowedMissingPrefixes": ["/assets/", "/primordial-swamp/assets/"]
+      }
+    }
+  ]
+}

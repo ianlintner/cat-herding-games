@@ -1,0 +1,184 @@
+name: Deploy Cat Herding Games hub
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Every 30 minutes. The job exits early unless a game's main SHA changed.
+    - cron: '*/30 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  # PR runs may cancel superseded PR pushes, but deploys (push/dispatch/schedule)
+  # must never cancel each other mid-upload or mid-live-smoke. A scheduled tick
+  # landing during a deploy otherwise sees stale live versions.json and starts
+  # a second full rebuild that kills the first.
+  group: games-hub-${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build and smoke-test all games
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.gate.outputs.should_deploy }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install hub dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (manifest and generated site)
+        run: npm test
+
+      - name: Detect upstream game changes (scheduled runs only)
+        id: detect
+        if: github.event_name == 'schedule'
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHANGED=0
+          if ! curl -fsS --max-time 20 https://games.cat-herding.net/versions.json -o /tmp/live-versions.json; then
+            echo "Live versions.json unavailable; rebuilding."
+            CHANGED=1
+          else
+            while IFS=$'\t' read -r slug repo ref; do
+              [ -z "$slug" ] && continue
+              REMOTE_SHA=$(git ls-remote "https://github.com/${repo}.git" "refs/heads/${ref}" | cut -f1)
+              LIVE_SHA=$(jq -r --arg s "$slug" '.[$s].sha // ""' /tmp/live-versions.json)
+              if [ "$REMOTE_SHA" != "$LIVE_SHA" ]; then
+                echo "Changed: $slug ($ref: $LIVE_SHA -> $REMOTE_SHA)"
+                CHANGED=1
+              fi
+            done < <(jq -r '.games[] | [.slug, .repo, .ref] | @tsv' games.json)
+          fi
+          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+
+      - name: Set deploy gate
+        id: gate
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ steps.detect.outputs.changed }}" != "1" ]; then
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "No game SHA changed since the live build; skipping."
+          else
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build all games
+        if: steps.gate.outputs.should_deploy == 'true'
+        run: npm run build
+
+      - name: Install Playwright browser
+        if: steps.gate.outputs.should_deploy == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Serve build and run local smoke test
+        if: steps.gate.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx scripts/serve.ts dist &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ > /dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          npm run smoke
+
+      - name: Upload built bundle
+        if: steps.gate.outputs.should_deploy == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: games-hub-dist
+          path: dist/
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Azure Static Web Apps
+    needs: build
+    if: github.event_name != 'pull_request' && needs.build.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install hub dependencies
+        run: npm ci
+
+      - name: Download the exact bundle smoke-tested in the build job
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: games-hub-dist
+          path: dist/
+
+      - name: Deploy dist/ to SWA
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: dist
+          skip_app_build: true
+          skip_api_build: true
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test live deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          SMOKE_BASE_URL=https://games.cat-herding.net npm run smoke
+
+  deploy-redirects:
+    name: Deploy legacy host redirects
+    needs: build
+    if: github.event_name != 'pull_request' && needs.build.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    # Requires AZURE_SWA_REDIRECTS_TOKEN, a deployment token for the
+    # cat-herding-redirects SWA. Parent card sets this repo secret; if it is
+    # absent this job warns and skips rather than failing the main deploy.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Check for redirect token
+        id: token
+        env:
+          REDIRECT_TOKEN: ${{ secrets.AZURE_SWA_REDIRECTS_TOKEN }}
+        run: |
+          if [ -n "$REDIRECT_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::AZURE_SWA_REDIRECTS_TOKEN is not set; skipping legacy redirects deploy."
+          fi
+
+      - name: Deploy redirects SWA
+        if: steps.token.outputs.available == 'true'
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_REDIRECTS_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: redirects
+          skip_app_build: true
+          skip_api_build: true
