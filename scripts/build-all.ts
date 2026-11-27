@@ -22,6 +22,7 @@ import {
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Keep the checked-in index in sync with games.json on every build.
@@ -37,13 +38,22 @@ const SWA_FREE_LIMIT_BYTES = 250 * 1024 * 1024;
 type Game = {
   slug: string;
   title: string;
+  /** `vite` (default): clone, install, build. `static`: clone and copy files, no build.
+   *  `nes-rom`: committed ROM + jsnes player, nothing is cloned. */
+  kind?: 'vite' | 'static' | 'nes-rom';
   repo: string;
   ref: string;
   workdir: string;
-  install: string;
-  build: string;
+  install?: string | null;
+  build?: string | null;
   baseEnv?: string | null;
   output: string;
+  /** static kind: paths (relative to workdir) copied into dist/<slug>/. Default: everything. */
+  include?: string[];
+  /** nes-rom kind: committed ROM, its provenance and the player template dir. */
+  rom?: string;
+  provenance?: string;
+  player?: string;
   submodules?: boolean;
   env?: Record<string, string>;
 };
@@ -105,11 +115,70 @@ function prepareSource(game: Game): string {
   return sha;
 }
 
+/** Copy a prebuilt/static tree into dist/<slug>/ and return its size. */
+function finishStatic(game: Game, copy: (dest: string) => void): number {
+  const dest = join(DIST, game.slug);
+  rmSync(dest, { recursive: true, force: true });
+  mkdirSync(dest, { recursive: true });
+  copy(dest);
+  if (!existsSync(join(dest, 'index.html'))) {
+    throw new Error(`${game.slug} produced no index.html in dist/${game.slug}/`);
+  }
+  const bytes = dirSizeBytes(dest);
+  console.log(`✓ ${game.slug}: ${formatBytes(bytes)} → dist/${game.slug}/`);
+  return bytes;
+}
+
+/** Static game: no install/build step; copy the declared files from the clone. */
+function copyStaticGame(game: Game): number {
+  const root = join(BUILD_DIR, game.slug, game.workdir);
+  return finishStatic(game, (dest) => {
+    for (const rel of game.include ?? ['.']) {
+      const from = resolve(root, rel);
+      if (!from.startsWith(resolve(root))) throw new Error(`${game.slug}: include escapes workdir: ${rel}`);
+      if (!existsSync(from)) throw new Error(`${game.slug}: include path missing: ${rel}`);
+      cpSync(from, join(dest, rel === '.' ? '' : rel), { recursive: true });
+    }
+  });
+}
+
+/**
+ * NES homebrew: the ROM is committed to this repo (the source repo is private and
+ * must never be cloned from CI). Verify it against PROVENANCE.json, then assemble
+ * dist/<slug>/ from the player template, the ROM and the jsnes build.
+ */
+function buildNesRom(game: Game): { bytes: number; sha: string } {
+  if (!game.rom || !game.provenance || !game.player) {
+    throw new Error(`${game.slug}: nes-rom games need rom, provenance and player`);
+  }
+  const romPath = join(ROOT, game.rom);
+  const provPath = join(ROOT, game.provenance);
+  const prov = JSON.parse(readFileSync(provPath, 'utf8')) as { sha256: string; sourceCommit: string; bytes: number };
+  const rom = readFileSync(romPath);
+  const actual = createHash('sha256').update(rom).digest('hex');
+  if (actual !== prov.sha256 || rom.length !== prov.bytes) {
+    throw new Error(
+      `${game.slug}: ${game.rom} does not match ${game.provenance} (sha256 ${actual}, ${rom.length} bytes). ` +
+        `Update both together through a PR.`,
+    );
+  }
+  const jsnesDir = join(ROOT, 'node_modules/jsnes');
+  const bytes = finishStatic(game, (dest) => {
+    cpSync(join(ROOT, game.player!), dest, { recursive: true });
+    cpSync(romPath, join(dest, 'catherding.nes'));
+    cpSync(provPath, join(dest, 'PROVENANCE.json'));
+    cpSync(join(jsnesDir, 'dist/jsnes.min.js'), join(dest, 'jsnes.min.js'));
+    cpSync(join(jsnesDir, 'LICENSE'), join(dest, 'LICENSE-jsnes.txt'));
+  });
+  return { bytes, sha: prov.sourceCommit };
+}
+
 function buildGame(game: Game): number {
   const repoRoot = join(BUILD_DIR, game.slug);
   const workdir = join(repoRoot, game.workdir);
   const base = `/${game.slug}/`;
 
+  if (!game.install || !game.build) throw new Error(`${game.slug}: vite games need install and build`);
   const [installCmd, ...installArgs] = game.install.split(' ');
   run(installCmd, installArgs, workdir);
 
@@ -158,8 +227,18 @@ function main() {
 
   for (const game of games) {
     console.log(`\n════════ ${game.title} (${game.slug}) ════════`);
-    const sha = prepareSource(game);
-    total += buildGame(game);
+    let sha: string;
+    if (game.kind === 'nes-rom') {
+      const built = buildNesRom(game);
+      sha = built.sha;
+      total += built.bytes;
+    } else if (game.kind === 'static') {
+      sha = prepareSource(game);
+      total += copyStaticGame(game);
+    } else {
+      sha = prepareSource(game);
+      total += buildGame(game);
+    }
     versions[game.slug] = { sha, builtAt: new Date().toISOString(), title: game.title };
   }
 

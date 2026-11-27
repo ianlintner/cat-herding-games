@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Cat Herding (NES homebrew, WIP) — Cat Herding Games</title>
+  <meta name="theme-color" content="#151322">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="player.css">
+</head>
+<body>
+  <header class="bar">
+    <a href="/" class="back">← All games</a>
+    <h1>Cat Herding <span class="wip">NES homebrew (WIP)</span></h1>
+  </header>
+
+  <main>
+    <div id="stage" class="stage">
+      <canvas id="screen" width="256" height="240" aria-label="Cat Herding NES game screen"></canvas>
+      <button id="start" type="button" class="overlay">▶ Click, tap or press Enter to start<small>(unlocks sound)</small></button>
+      <div id="paused" class="overlay" hidden>Paused — click to resume</div>
+    </div>
+    <p id="status" role="status" aria-live="polite">Loading ROM…</p>
+
+    <div id="touch" class="touch" aria-label="On-screen controls">
+      <div class="dpad">
+        <button type="button" data-btn="UP" aria-label="Up">▲</button>
+        <button type="button" data-btn="LEFT" aria-label="Left">◀</button>
+        <button type="button" data-btn="RIGHT" aria-label="Right">▶</button>
+        <button type="button" data-btn="DOWN" aria-label="Down">▼</button>
+      </div>
+      <div class="meta">
+        <button type="button" data-btn="SELECT">Select</button>
+        <button type="button" data-btn="START">Start</button>
+      </div>
+      <div class="ab">
+        <button type="button" data-btn="B" aria-label="B">B</button>
+        <button type="button" data-btn="A" aria-label="A">A</button>
+      </div>
+    </div>
+
+    <section class="legend" aria-labelledby="controls-h">
+      <h2 id="controls-h">Controls</h2>
+      <table>
+        <thead><tr><th>NES</th><th>Keyboard</th><th>Gamepad</th></tr></thead>
+        <tbody>
+          <tr><td>D-pad</td><td>Arrow keys</td><td>D-pad / left stick</td></tr>
+          <tr><td>A</td><td>X</td><td>B / East face button</td></tr>
+          <tr><td>B</td><td>Z</td><td>A / South face button</td></tr>
+          <tr><td>Start</td><td>Enter</td><td>Start</td></tr>
+          <tr><td>Select</td><td>Shift</td><td>Back / Select</td></tr>
+        </tbody>
+      </table>
+      <p>The game pauses automatically when this tab is hidden. Touch buttons appear on touch screens.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      <strong>Cat Herding</strong> is an NES homebrew game (work in progress) built in 6502 assembly with the Alleycat engine by Ian Lintner.
+      Runs on <a href="https://github.com/bfirsh/jsnes" rel="noopener noreferrer">jsnes</a> (Apache-2.0, see <a href="LICENSE-jsnes.txt">license</a>).
+      ROM provenance: <a href="PROVENANCE.json">PROVENANCE.json</a>.
+    </p>
+    <p><a href="/">Back to Cat Herding Games</a></p>
+  </footer>
+
+  <script src="jsnes.min.js"></script>
+  <script src="player.js"></script>
+</body>
+</html>
