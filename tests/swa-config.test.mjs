@@ -52,10 +52,11 @@ test('deployed dist/staticwebapp.config.json obeys the SWA one-wildcard rule whe
   if (existsSync(deployed)) assertValidConfig(deployed);
 });
 
-test('every game slug has a one-wildcard assets cache route', () => {
+test('every Vite game slug has a one-wildcard assets cache route', () => {
   const config = JSON.parse(readFileSync(join(ROOT, 'staticwebapp.config.json'), 'utf8'));
   const routes = new Set(config.routes.map((r) => r.route));
-  for (const game of manifest.games) {
+  // static (astrolog) and nes-rom (cat-herding) games emit no Vite assets/ directory.
+  for (const game of manifest.games.filter((g) => (g.kind ?? 'vite') === 'vite')) {
     assert.ok(
       routes.has(`/${game.slug}/assets/*`),
       `missing cached assets route for ${game.slug}`,

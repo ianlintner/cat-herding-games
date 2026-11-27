@@ -1,0 +1,12 @@
+{
+  "name": "Cat Herding (NES)",
+  "sourceRepo": "ianlintner/cat-herding",
+  "sourceRepoVisibility": "private",
+  "sourceCommit": "e9dfd60bea9b8387c593e5d0c5249093f29c0900",
+  "sourcePath": "build/catherding.nes",
+  "file": "catherding.nes",
+  "bytes": 49168,
+  "sha256": "b4cdef23e8b2137ff3a99af65ea38c37119fd047939ea10e8207ea9a8cef6435",
+  "buildDate": "2026-11-15",
+  "publicationApproval": "Ian approved publishing this ROM for in-browser play (kanban t_76680552)"
+}

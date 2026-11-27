@@ -19,6 +19,7 @@ const card = (g) => `
         <a class="thumb" href="/${esc(g.slug)}/" aria-label="Play ${esc(g.title)}">
           <img src="${esc(g.thumbnail)}" alt="${esc(g.title)} screenshot" width="640" height="360" loading="lazy" decoding="async">
           ${g.slug === featured ? '<span class="badge">★ Featured</span>' : ''}
+          ${g.label ? `<span class="badge badge-label">${esc(g.label)}</span>` : ''}
         </a>
         <div class="card-body">
           <h3><a href="/${esc(g.slug)}/">${esc(g.title)}</a></h3>
@@ -26,7 +27,7 @@ const card = (g) => `
           <ul class="tags">${g.tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
           <div class="actions">
             <a class="play" href="/${esc(g.slug)}/">▶ Play</a>
-            <a class="source" href="https://github.com/${esc(g.repo)}" rel="noopener noreferrer">Source ↗</a>
+            ${g.private ? '' : `<a class="source" href="https://github.com/${esc(g.repo)}" rel="noopener noreferrer">Source ↗</a>`}
           </div>
         </div>
       </article>`;
@@ -37,7 +38,7 @@ const html = `<!doctype html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cat Herding Games — a passel of pixel-sized pastimes</title>
-  <meta name="description" content="Play Nyan Noodle, Monster League Arcade, Space Tycoon and Primordial Swamp — four little games herded into one cozy corner of the web.">
+  <meta name="description" content="Play ${games.map((g) => esc(g.title)).join(', ')} — ${games.length} little games herded into one cozy corner of the web.">
   <meta name="theme-color" content="#151322">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
@@ -48,7 +49,7 @@ const html = `<!doctype html>
     <div>
       <p class="eyebrow">A collective of notoriously unherdable games</p>
       <h1>Cat Herding Games</h1>
-      <p class="tagline">Four games. Zero obedience. Infinite treats.</p>
+      <p class="tagline">${games.length} games. Zero obedience. Infinite treats.</p>
     </div>
   </header>
 

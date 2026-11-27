@@ -16,12 +16,18 @@ mkdirSync(OUT, { recursive: true });
 const { games } = JSON.parse((await import('node:fs')).readFileSync(join(ROOT, 'games.json'), 'utf8'));
 
 const browser = await chromium.launch({ headless: true });
+const only = process.argv.slice(2);
 for (const game of games) {
+  if (only.length && !only.includes(game.slug)) continue;
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
   const path = `/${game.slug}/${game.smokePath ?? ''}`;
   try {
     await page.goto(BASE + path, { waitUntil: 'load', timeout: 60_000 });
     await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 30_000 });
+    if (game.kind === 'nes-rom') {
+      await page.locator('#start').click(); // start the emulator so the shot shows gameplay
+      await page.waitForTimeout(2500);
+    }
     await page.waitForTimeout(1500); // let the first frame render
     await page.screenshot({ path: join(OUT, `${game.slug}.png`), type: 'png' });
     console.log(`✓ captured ${game.slug}`);

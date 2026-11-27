@@ -63,7 +63,9 @@ jobs:
                 echo "Changed: $slug ($ref: $LIVE_SHA -> $REMOTE_SHA)"
                 CHANGED=1
               fi
-            done < <(jq -r '.games[] | [.slug, .repo, .ref] | @tsv' games.json)
+            # nes-rom games ship a committed ROM (private source repo, never cloned or
+            # queried from CI); they only change through a PR, which redeploys on merge.
+            done < <(jq -r '.games[] | select(.kind != "nes-rom") | [.slug, .repo, .ref] | @tsv' games.json)
           fi
           echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
 
@@ -154,29 +156,49 @@ jobs:
     needs: build
     if: github.event_name != 'pull_request' && needs.build.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
-    # Requires AZURE_SWA_REDIRECTS_TOKEN, a deployment token for the
-    # cat-herding-redirects SWA. Parent card sets this repo secret; if it is
-    # absent this job warns and skips rather than failing the main deploy.
+    # Free SWAs allow only 2 custom domains, so legacy hosts are split across two
+    # redirect SWAs. Both get the identical redirects/ folder (same host map), so
+    # any legacy host resolves on whichever SWA it is bound to.
+    #   AZURE_SWA_REDIRECTS_TOKEN   -> cat-herding-redirects   (dinosaur, space-tycoon)
+    #   AZURE_SWA_REDIRECTS_2_TOKEN -> cat-herding-redirects-2 (astrolog)
+    # Parent card sets these repo secrets; a missing one warns and skips that SWA
+    # rather than failing the main deploy.
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - name: Check for redirect token
+      - name: Check for redirect tokens
         id: token
         env:
-          REDIRECT_TOKEN: ${{ secrets.AZURE_SWA_REDIRECTS_TOKEN }}
+          REDIRECT_TOKEN_1: ${{ secrets.AZURE_SWA_REDIRECTS_TOKEN }}
+          REDIRECT_TOKEN_2: ${{ secrets.AZURE_SWA_REDIRECTS_2_TOKEN }}
         run: |
-          if [ -n "$REDIRECT_TOKEN" ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::AZURE_SWA_REDIRECTS_TOKEN is not set; skipping legacy redirects deploy."
-          fi
+          for n in 1 2; do
+            var="REDIRECT_TOKEN_$n"
+            if [ -n "${!var}" ]; then
+              echo "available_$n=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "available_$n=false" >> "$GITHUB_OUTPUT"
+              name="AZURE_SWA_REDIRECTS_TOKEN"; [ "$n" = 2 ] && name="AZURE_SWA_REDIRECTS_2_TOKEN"
+              echo "::warning::$name is not set; skipping redirects SWA #$n deploy."
+            fi
+          done
 
-      - name: Deploy redirects SWA
-        if: steps.token.outputs.available == 'true'
+      - name: Deploy redirects SWA (cat-herding-redirects)
+        if: steps.token.outputs.available_1 == 'true'
         uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_REDIRECTS_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: redirects
+          skip_app_build: true
+          skip_api_build: true
+
+      - name: Deploy redirects SWA (cat-herding-redirects-2)
+        if: steps.token.outputs.available_2 == 'true'
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_REDIRECTS_2_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: redirects
