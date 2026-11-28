@@ -28,15 +28,10 @@
       "baseEnv": null,
       "output": "dist",
       "thumbnail": "/thumbnails/monster-league-arcade.png",
-      "blurb": "Retro-modern Halloween sports: football and hockey with a league of lovable monsters. Three games in one cabinet.",
+      "blurb": "Retro-modern Halloween football with a league of lovable monsters, plus a hockey preview.",
       "status": "playable",
       "tags": ["sports", "arcade", "multi-page"],
-      "smokePath": "football/",
-      "subpathBlocker": {
-        "summary": "Game HTML hardcodes root-absolute /assets/* and /football/ /hockey/ links; Vite --base only rewrites its own emitted assets.",
-        "requiredChange": "Use base-relative asset URLs in the game source (import.meta.env.BASE_URL or VITE_BASE) and prefix internal links with the base path.",
-        "allowedMissingPrefixes": ["/assets/atlas.json", "/assets/sprites/", "/assets/arenas/"]
-      }
+      "smokePath": "football/"
     },
     {
       "slug": "space-tycoon",
