@@ -89,6 +89,59 @@ for (const game of games) {
   });
 }
 
+test('cat-herding: jsnes player fetches the ROM, starts on click and renders non-blank frames', async ({ page }) => {
+  const failures = track(page);
+  const romResponse = page.waitForResponse((r) => r.url().endsWith('/cat-herding/catherding.nes'));
+  const res = await page.goto('/cat-herding/', { waitUntil: 'load' });
+  expect(res?.status()).toBe(200);
+  expect((await romResponse).status(), 'ROM fetch').toBe(200);
+
+  await expect(page.locator('#start')).toBeVisible();
+  await expect(page.locator('#touch')).toBeAttached();
+  await expect(page.locator('.legend')).toContainText('Arrow keys');
+  await expect(page.locator('a[href="/"]').first()).toBeVisible();
+  await page.waitForFunction(() => (window as any).__catHerding?.state === 'ready', null, { timeout: 30_000 });
+
+  await page.locator('#start').click();
+  await page.waitForTimeout(3000);
+
+  const stats = await page.evaluate(() => {
+    const c = document.getElementById('screen') as HTMLCanvasElement;
+    const data = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+    const colours = new Set<number>();
+    let nonBlack = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const rgb = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+      colours.add(rgb);
+      if (rgb !== 0) nonBlack++;
+    }
+    const dbg = (window as any).__catHerding;
+    return { colours: colours.size, nonBlack, frames: dbg.frames, state: dbg.state, romBytes: dbg.romBytes };
+  });
+  expect(stats.romBytes).toBe(49168);
+  expect(stats.state).toBe('running');
+  expect(stats.frames, 'frames emulated in ~3s').toBeGreaterThan(60);
+  expect(stats.nonBlack, 'canvas is not blank').toBeGreaterThan(1000);
+  expect(stats.colours, 'canvas has more than one colour').toBeGreaterThan(1);
+  expect(failures.map((f) => f.message)).toEqual([]);
+
+  // Canvas is scaled by an integer factor.
+  const box = await page.locator('#screen').boundingBox();
+  expect(box!.width % 256).toBe(0);
+  expect(box!.height % 240).toBe(0);
+});
+
+test('astrolog: relative paths resolve under /astrolog/ and the game script loads', async ({ page }) => {
+  const failures = track(page);
+  const seen: string[] = [];
+  page.on('response', (r) => seen.push(new URL(r.url()).pathname));
+  await page.goto('/astrolog/', { waitUntil: 'load' });
+  await page.waitForLoadState('networkidle').catch(() => {});
+  expect(seen).toContain('/astrolog/src/game.js');
+  expect(seen).toContain('/astrolog/src/modules/GameState.js');
+  expect(failures.map((f) => f.message)).toEqual([]);
+});
+
 test('versions.json lists every built game with a SHA', async ({ request }) => {
   const res = await request.get('/versions.json');
   expect(res.status()).toBe(200);

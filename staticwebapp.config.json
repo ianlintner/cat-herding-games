@@ -45,7 +45,19 @@
       "headers": { "cache-control": "public, max-age=31536000, immutable" }
     },
     {
-      "route": "/*/assets/*",
+      "route": "/nyan-noodle/assets/*",
+      "headers": { "cache-control": "public, max-age=86400" }
+    },
+    {
+      "route": "/monster-league-arcade/assets/*",
+      "headers": { "cache-control": "public, max-age=86400" }
+    },
+    {
+      "route": "/space-tycoon/assets/*",
+      "headers": { "cache-control": "public, max-age=86400" }
+    },
+    {
+      "route": "/primordial-swamp/assets/*",
       "headers": { "cache-control": "public, max-age=86400" }
     },
     {
@@ -77,6 +89,7 @@
     "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' https://cdn.cat-herding.net blob:; connect-src 'self' https://cdn.cat-herding.net; worker-src 'self' blob:; frame-ancestors 'none'"
   },
   "mimeTypes": {
-    ".json": "application/json"
+    ".json": "application/json",
+    ".nes": "application/octet-stream"
   }
 }

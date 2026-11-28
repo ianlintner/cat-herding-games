@@ -14,7 +14,11 @@
       "thumbnail": "/thumbnails/nyan-noodle.png",
       "blurb": "Run a cozy ramen shop for a crew of very particular cats. Prep bowls, serve tickets, and keep the broth flowing.",
       "status": "playable",
-      "tags": ["cozy", "management", "phaser"],
+      "tags": [
+        "cozy",
+        "management",
+        "phaser"
+      ],
       "featured": true
     },
     {
@@ -30,7 +34,11 @@
       "thumbnail": "/thumbnails/monster-league-arcade.png",
       "blurb": "Retro-modern Halloween football with a league of lovable monsters, plus a hockey preview.",
       "status": "playable",
-      "tags": ["sports", "arcade", "multi-page"],
+      "tags": [
+        "sports",
+        "arcade",
+        "multi-page"
+      ],
       "smokePath": "football/"
     },
     {
@@ -50,7 +58,11 @@
       "thumbnail": "/thumbnails/space-tycoon.png",
       "blurb": "Build a freight empire among the stars. Planets, ships, trade routes and an unreasonable amount of paperwork.",
       "status": "playable",
-      "tags": ["strategy", "simulation", "space"]
+      "tags": [
+        "strategy",
+        "simulation",
+        "space"
+      ]
     },
     {
       "slug": "primordial-swamp",
@@ -65,12 +77,63 @@
       "thumbnail": "/thumbnails/primordial-swamp.png",
       "blurb": "A scientifically accurate dinosaur roguelite inspired by Odell Lake. Survive the swamp, one prehistoric meal at a time.",
       "status": "playable",
-      "tags": ["roguelite", "dinosaurs", "retro"],
+      "tags": [
+        "roguelite",
+        "dinosaurs",
+        "retro"
+      ],
       "subpathBlocker": {
         "summary": "Vite copies only public/, but this repo keeps 42 game assets in repo-root assets/; runtime requests /assets/* which do not exist in dist/.",
         "requiredChange": "Move assets/ into public/assets/ (or set publicDir: 'assets' in vite.config.ts) and load them via import.meta.env.BASE_URL so they resolve under /primordial-swamp/.",
-        "allowedMissingPrefixes": ["/assets/", "/primordial-swamp/assets/"]
+        "allowedMissingPrefixes": [
+          "/assets/",
+          "/primordial-swamp/assets/"
+        ]
       }
+    },
+    {
+      "slug": "astrolog",
+      "title": "Astrolog",
+      "kind": "static",
+      "repo": "ianlintner/Astrolog",
+      "ref": "main",
+      "workdir": ".",
+      "output": ".",
+      "include": [
+        "index.html",
+        "game.js",
+        "src"
+      ],
+      "thumbnail": "/thumbnails/astrolog.png",
+      "blurb": "Space Logistics Tycoon: chart trade routes between star systems, run freighter fleets and outmaneuver rival shipping lines.",
+      "status": "playable",
+      "tags": [
+        "strategy",
+        "logistics",
+        "space"
+      ]
+    },
+    {
+      "slug": "cat-herding",
+      "title": "Cat Herding",
+      "kind": "nes-rom",
+      "label": "NES homebrew (WIP)",
+      "repo": "ianlintner/cat-herding",
+      "private": true,
+      "ref": "e9dfd60bea9b8387c593e5d0c5249093f29c0900",
+      "workdir": ".",
+      "output": "dist/cat-herding",
+      "rom": "games/cat-herding/catherding.nes",
+      "provenance": "games/cat-herding/PROVENANCE.json",
+      "player": "games/cat-herding/player",
+      "thumbnail": "/thumbnails/cat-herding.png",
+      "blurb": "An alley-cat platformer for the original NES, written in 6502 assembly. Plays right here in your browser via jsnes.",
+      "status": "wip",
+      "tags": [
+        "nes",
+        "platformer",
+        "homebrew"
+      ]
     }
   ]
 }

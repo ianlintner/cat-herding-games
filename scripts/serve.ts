@@ -22,6 +22,7 @@ const MIME: Record<string, string> = {
   '.wav': 'audio/wav',
   '.mp4': 'video/mp4',
   '.woff2': 'font/woff2',
+  '.nes': 'application/octet-stream',
 };
 
 createServer((req, res) => {
