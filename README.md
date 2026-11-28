@@ -69,12 +69,11 @@ The legacy hosts are served by two tiny redirect SWAs, both deployed from the sa
 
 ## Known upstream subpath blockers
 
-Two games build under `/<slug>/` but still request some assets at root-absolute paths from their own source. The hub deliberately does **not** patch game source; these are tracked for follow-up cards in those repos and encoded as allowed-missing prefixes in `games.json` so the smoke test still catches any *new* breakage:
+One game still builds under `/<slug>/` but requests some assets at root-absolute paths from its own source. The hub deliberately does **not** patch game source; this is tracked for a follow-up card in that repo and encoded as allowed-missing prefixes in `games.json` so the smoke test still catches any *new* breakage:
 
-- **monster-league-arcade**: `index.html` links `/football/` and `/hockey/` and the football game loads `/assets/atlas.json`, `/assets/sprites/*` and `/assets/arenas/*`. Required fix: use `import.meta.env.BASE_URL` for asset URLs and prefix internal links with the Vite base path (or set `VITE_BASE` as nyan-noodle already does).
 - **primordial-swamp**: 42 game assets live in repo-root `assets/`, which Vite does not copy (only `public/` is copied), and runtime URLs are root-absolute. Required fix: move `assets/` into `public/assets/` (or set `publicDir: 'assets'`), and load them relative to `import.meta.env.BASE_URL`.
 
-Until those fixes land, the games' JS bundles and canvas render correctly, but some sprites/audio/images fall back or stay blank.
+Until that fix lands, the game's JS bundle and canvas render correctly, but some sprites/audio/images fall back or stay blank.
 
 ## Local commands
 
